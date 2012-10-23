@@ -90,14 +90,14 @@ function ConvertTo-Translit {
 	}
 }  
 
-function ForEach-Key {
+function ConvertFrom-TranslitRules {
 	<#
 		.Synopsis
 		    Конвертация таблицы транслитерации (да и не только) в массив объектов с целью дальнейшей сериализации.
 		.Parameter InputObject
 		    Таблица транслитерации.
 		.Example
-            $GOST_R_52535_A1 | ForEach-Key | ConvertTo-HTML -Fragment
+            $GOST_R_52535_A1 | ConvertFrom-TranslitRules | ConvertTo-HTML -Fragment
 	#>
 	
     
@@ -127,5 +127,5 @@ function ForEach-Key {
 
 Export-ModuleMember `
     ConvertTo-Translit `
-    , ForEach-Key
+    , ConvertFrom-TranslitRules `
 ;
