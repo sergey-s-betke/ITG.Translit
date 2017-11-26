@@ -9,6 +9,7 @@ environment:
 
 install:
   - ps: |
+      Install-PackageProvider -Name NuGet -Force;
       Install-Module -Name Psake -Force -SkipPublisherCheck -Scope CurrentUser -ErrorAction Stop;
       Import-Module Psake -ErrorAction Stop;
       Invoke-Psake InstallModules;
