@@ -21,6 +21,12 @@ Properties {
 Task Default -Depends UnitTests
 
 Task InstallModules {
+	$null = Install-PackageProvider -Name NuGet -ErrorAction Stop -Force;
+	$null = Import-PackageProvider -Name NuGet -ErrorAction Stop -Force;
+	$null = (
+		Get-PackageSource -ProviderName NuGet `
+		| Set-PackageSource -Trusted `
+	);
 	Install-Module -Name Pester -SkipPublisherCheck -Scope CurrentUser -ErrorAction Stop -Verbose;
 	Install-Module -Name Psake -SkipPublisherCheck -Scope CurrentUser -ErrorAction Stop -Verbose;
 }
@@ -43,12 +49,12 @@ Task UnitTests -Depends InstallModules, ScriptAnalysis {
 		-PassThru `
 	;
 
-	if ( $env:APPVEYOR -eq 'True' ) {
-		( New-Object System.Net.WebClient ).UploadFile(
-			"https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)",
-			( Resolve-Path $TestResultsPath )
-		);
-	};
+    if ( $env:APPVEYOR -eq 'True' ) {
+    ( New-Object System.Net.WebClient ).UploadFile(
+		"https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)",
+		( Resolve-Path $TestResultsPath )
+	);
+    };
 
 	if ( $PesterResults.FailedCount ) {
 		$errorID = if ( $TestType -eq 'Unit' ) { 'UnitTestFailure' }

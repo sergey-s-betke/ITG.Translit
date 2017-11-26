@@ -12,7 +12,7 @@ install:
       Install-PackageProvider -Name NuGet -Force;
       Install-Module -Name Psake -Force -SkipPublisherCheck -Scope CurrentUser -ErrorAction Stop;
       Import-Module Psake -ErrorAction Stop;
-      Invoke-Psake InstallModules;
+      Invoke-Psake InstallModules -ErrorAction Stop;
 
 # build_script:
 build: off
@@ -24,4 +24,4 @@ build: off
 
 test_script:
   - ps: |
-      Invoke-psake UnitTests -ErrorAction Continue;
+      Invoke-psake UnitTests -ErrorAction Stop;
