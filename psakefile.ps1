@@ -21,14 +21,13 @@ Properties {
 Task Default -Depends UnitTests
 
 Task InstallModules {
-	$null = Install-PackageProvider -Name NuGet -ErrorAction Stop -Force;
-	$null = Import-PackageProvider -Name NuGet -ErrorAction Stop -Force;
-	$null = (
-		Get-PackageSource -ProviderName NuGet `
-		| Set-PackageSource -Trusted `
-	);
+	Install-PackageProvider -Name NuGet -ErrorAction Stop -Force | Out-Null;
+	Import-PackageProvider -Name NuGet -ErrorAction Stop -Force | Out-Null;
+	Get-PackageSource -ProviderName PowerShellGet `
+	| Set-PackageSource -Trusted `
+	| Out-Null `
+	;
 	Install-Module -Name Pester -SkipPublisherCheck -Scope CurrentUser -ErrorAction Stop -Verbose;
-	Install-Module -Name Psake -SkipPublisherCheck -Scope CurrentUser -ErrorAction Stop -Verbose;
 }
 
 Task ScriptAnalysis -Depends InstallModules {
