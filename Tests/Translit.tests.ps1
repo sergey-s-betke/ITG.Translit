@@ -9,35 +9,53 @@ $ModulePath = ( Join-Path -Path ( Join-Path -Path $RootPath -ChildPath 'ITG.Tran
 
 # Import-Module $ModulePath -Force;
 
-Describe 'Модуль' {
+Describe 'ITG.Translit.psm1' {
 	It 'Должен успешно загружаться' {
 		{ Import-Module -FullyQualifiedName $ModulePath -Force -ErrorAction 'Stop' } `
-		| Should Not Throw;
+		| Should -Not -Throw;
 	}
 }
 
-Describe 'Транслитерация простой строки' {
+Describe 'ConvertTo-Translit' {
 	Context 'В случае, когда входные данные передаются через конвейер' {
-		It 'Должна вернуть результат транслитерации' {
+		It 'Должен вернуть результат транслитерации' {
 			'тест' `
 			| ConvertTo-Translit `
-			| Should be 'test'
+			| Should -Be 'test'
 		}
 	}
 	Context 'В случае, когда исходная строка передаётся как аргумент' {
-		It 'Должна вернуть результат транслитерации' {
+		It 'Должен вернуть результат транслитерации' {
 			ConvertTo-Translit -SourceString 'тест' `
-			| Should be 'test'
+			| Should -Be 'test'
 		}
 	}
-}
-
-Describe 'Транслитерация массива строк' {
-	Context 'В случае, когда входные данные передаются через конвейер' {
-		It 'Должна вернуть массив строк после транслитерации' {
+	Context 'В случае, когда массив входных данных передаётся через конвейер' {
+		It 'Должен вернуть массив строк после транслитерации' {
 			'Бетке', 'Сергей', 'Сергеевич' `
 			| ConvertTo-Translit `
-			| Should be 'Betke', 'Sergei', 'Sergeevich'
+			| Should -Be 'Betke', 'Sergei', 'Sergeevich'
+		}
+	}
+	Context 'В случае, когда строка состоит из одного символа' {
+		It 'Должен вернуть строку, в которой только первый символ прописной' {
+			'Я', 'Ш', 'Щ' `
+			| ConvertTo-Translit `
+			| Should -BeExactly 'Ia', 'Sh', 'Shch'
+		}
+	}
+	Context 'В случае, когда все символы в строке прописные' {
+		It 'Должен вернуть строку, в которой все символы прописные' {
+			'ЩАНОВ' `
+			| ConvertTo-Translit `
+			| Should -BeExactly 'SHCHANOV'
+		}
+	}
+	Context 'В случае, когда за прописным символом идут строчные' {
+		It 'Должен вернуть строку, в которой только первый символ в транслитерации прописного прописной' {
+			'Щанов' `
+			| ConvertTo-Translit `
+			| Should -BeExactly 'Shchanov'
 		}
 	}
 }
