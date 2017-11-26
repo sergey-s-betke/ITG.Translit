@@ -40,4 +40,4 @@
 # Если ничего не понятно
 
 * используйте чат Gitter для того чтобы задать вопрос
-https://gitter.im/sergey-s-betke/ITG.Translit
+https://gitter.im/ITG-Translit
