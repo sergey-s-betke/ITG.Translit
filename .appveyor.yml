@@ -11,7 +11,7 @@ install:
   - ps: |
       Install-Module -Name Psake -Force -SkipPublisherCheck -Scope CurrentUser -ErrorAction Stop;
       Import-Module Psake -ErrorAction Stop;
-      Invoke-Psake InstallModules -ErrorAction Stop;
+      Invoke-Psake InstallModules;
 
 # build_script:
 build: off
