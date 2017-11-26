@@ -1,6 +1,6 @@
 ﻿Set-Variable `
-	-Name GOST_R_52535_A1 `
-	-Option constant `
+	-Name 'GOST_R_52535_A1' `
+	-Option ([System.Management.Automation.ScopedItemOptions]::Constant) `
 	-Value @{
 		'А'='A';
 		'Б'='B';
