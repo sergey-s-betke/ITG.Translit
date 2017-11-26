@@ -21,7 +21,7 @@ Properties {
 Task Default -Depends UnitTests
 
 Task InstallModules {
-	Install-PackageProvider -Name NuGet -ErrorAction Stop -Force | Out-Null;
+	Install-PackageProvider -Name NuGet -Scope CurrentUser -ErrorAction Stop -Force | Out-Null;
 	Import-PackageProvider -Name NuGet -ErrorAction Stop -Force | Out-Null;
 	Get-PackageSource -ProviderName PowerShellGet `
 	| Set-PackageSource -Trusted `
