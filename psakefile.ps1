@@ -82,7 +82,7 @@ Task ScriptAnalysis -Depends InstallModules {
 		);
 	};
 
-	if ( $False ) { # ( $ScriptAnalyzerResults.Count ) {
+	if ( $ScriptAnalyzerResults.Count ) {
 		$errorID = 'ScriptAnalyzerTestFailure';
 		$errorCategory = [System.Management.Automation.ErrorCategory]::LimitsExceeded;
 		$errorMessage = "Script Analyzer issues: $($ScriptAnalyzerResults.Count).";
@@ -100,7 +100,7 @@ Task ScriptAnalysis -Depends InstallModules {
 	}
 }
 
-Task UnitTests -Depends InstallModules, ScriptAnalysis {
+Task UnitTests -Depends InstallModules {
 	# Run Unit Tests with Code Coverage
 	'Starting unit tests...'
 
@@ -143,7 +143,7 @@ Task UnitTests -Depends InstallModules, ScriptAnalysis {
 		Publish-Coverage -Coverage $coverage -Verbose;
 	};
 
-	if ( $False ) { # ( $PesterResults.FailedCount ) {
+	if ( $PesterResults.FailedCount ) {
 		$errorID = if ( $TestType -eq 'Unit' ) { 'UnitTestFailure' }
 			elseif ( $TestType -eq 'Integration' ) { 'InetegrationTestFailure' }
 			else { 'AcceptanceTestFailure' }
