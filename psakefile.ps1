@@ -23,12 +23,11 @@ Properties {
 Task Default -Depends UnitTests
 
 Task InstallModules {
-	Install-PackageProvider -Name NuGet -Scope CurrentUser -ErrorAction Stop -Force | Out-Null;
-	Import-PackageProvider -Name NuGet -ErrorAction Stop -Force | Out-Null;
-	Get-PackageSource -ProviderName PowerShellGet `
-	| Set-PackageSource -Trusted `
-	| Out-Null `
-	;
+	If ( -Not ( Get-PackageProvider -Name NuGet -ListAvailable ) ) {
+		Install-PackageProvider -Name NuGet -Scope CurrentUser -ErrorAction Stop -Force | Out-Null;
+		Import-PackageProvider -Name NuGet -ErrorAction Stop -Force | Out-Null;
+	};
+	Set-PSRepository -Name PSGallery -InstallationPolicy Trusted;
 	'Pester', 'Coveralls' | ForEach-Object {
 		If ( -Not ( Get-Module -Name $_ -ListAvailable ) ) {
 			Install-Module -Name $_ -SkipPublisherCheck -Scope CurrentUser -ErrorAction Stop -Verbose;
@@ -53,6 +52,7 @@ Task UnitTests -Depends InstallModules, ScriptAnalysis {
 			-Name ( Split-Path -Path $TestResultsDirPath -Leaf ) `
 			-ItemType Directory `
 			-Force `
+		| Out-Null `
 		;
 	};
 
@@ -60,7 +60,7 @@ Task UnitTests -Depends InstallModules, ScriptAnalysis {
 		-Path $TestsPath `
 		-OutputFile $TestResultsPath `
 		-OutputFormat NUnitXml `
-		-CodeCoverage "$SourcesPath\*.*" `
+		-CodeCoverage ( Join-Path -Path $SourcesPath -ChildPath '*.*' ) `
 		-CodeCoverageOutputFile $CodeCoveragePath `
 		-CodeCoverageOutputFileFormat JaCoCo `
 		-PassThru `
@@ -78,11 +78,11 @@ Task UnitTests -Depends InstallModules, ScriptAnalysis {
 		-and ( $env:COVERALLS_REPO_TOKEN ) `
 	) {
 		$coverage = Format-Coverage `
-			-PesterResults $CodeCoveragePath `
+			-PesterResults $PesterResults `
 			-CoverallsApiToken $env:COVERALLS_REPO_TOKEN `
 			-BranchName $env:APPVEYOR_REPO_BRANCH `
 		;
-		Publish-Coverage -Coverage $coverage;
+		Publish-Coverage -Coverage $coverage -Verbose;
 	};
 
 	if ( $PesterResults.FailedCount ) {
