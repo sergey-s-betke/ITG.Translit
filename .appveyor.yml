@@ -6,6 +6,8 @@ environment:
     PowerShellEdition: Desktop
   - APPVEYOR_BUILD_WORKER_IMAGE: WMF 5
     PowerShellEdition: Core
+  COVERALLS_REPO_TOKEN:
+    secure: qdM5+aH37DUZTvTqs6UoBAEsyuiPGr/z2SUsj13m/TU/Zf1qFEKJhqQQXpBeyjxO
 
 install:
   - ps: |

@@ -13,7 +13,9 @@ Import-Module Psake -ErrorAction Stop;
 Properties {
 	$SourcesPath = Join-Path -Path $PSScriptRoot -ChildPath 'ITG.Translit';
 	$TestsPath = Join-Path -Path $PSScriptRoot -ChildPath 'Tests';
-	$TestResultsPath = Join-Path -Path $TestsPath -ChildPath 'TestsResults.xml';
+	$TestResultsDirPath = Join-Path -Path $TestsPath -ChildPath 'TestsResults';
+	$TestResultsPath = Join-Path -Path $TestResultsDirPath -ChildPath 'TestsResults.xml';
+	$CodeCoveragePath = Join-Path -Path $TestResultsDirPath -ChildPath 'CodeCoveragePath.xml';
 #	$ArtifactPath = "$Env:BUILD_ARTIFACTSTAGINGDIRECTORY"
 #	$ModuleArtifactPath = "$ArtifactPath\Modules"
 }
@@ -27,7 +29,12 @@ Task InstallModules {
 	| Set-PackageSource -Trusted `
 	| Out-Null `
 	;
-	Install-Module -Name Pester -SkipPublisherCheck -Scope CurrentUser -ErrorAction Stop -Verbose;
+	'Pester', 'Coveralls' | ForEach-Object {
+		If ( -Not ( Get-Module -Name $_ -ListAvailable ) ) {
+			Install-Module -Name $_ -SkipPublisherCheck -Scope CurrentUser -ErrorAction Stop -Verbose;
+			Import-Module -Name $_;
+		};
+	};
 }
 
 Task ScriptAnalysis -Depends InstallModules {
@@ -40,20 +47,43 @@ Task UnitTests -Depends InstallModules, ScriptAnalysis {
 	# Run Unit Tests with Code Coverage
 	'Starting unit tests...'
 
+	If ( -Not ( Test-Path $TestResultsDirPath ) ) {
+		New-Item `
+			-Path ( Split-Path -Path $TestResultsDirPath -Parent ) `
+			-Name ( Split-Path -Path $TestResultsDirPath -Leaf ) `
+			-ItemType Directory `
+			-Force `
+		;
+	};
+
 	$PesterResults = Invoke-Pester `
 		-Path $TestsPath `
-		-CodeCoverage "$SourcesPath\*.*" `
 		-OutputFile $TestResultsPath `
 		-OutputFormat NUnitXml `
+		-CodeCoverage "$SourcesPath\*.*" `
+		-CodeCoverageOutputFile $CodeCoveragePath `
+		-CodeCoverageOutputFileFormat JaCoCo `
 		-PassThru `
 	;
 
-    if ( $env:APPVEYOR -eq 'True' ) {
-    ( New-Object System.Net.WebClient ).UploadFile(
-		"https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)",
-		( Resolve-Path $TestResultsPath )
-	);
-    };
+	if ( $env:APPVEYOR -eq 'True' ) {
+		( New-Object System.Net.WebClient ).UploadFile(
+			"https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)",
+			( Resolve-Path $TestResultsPath )
+		);
+	};
+
+	if (
+		( $env:APPVEYOR -eq 'True' ) `
+		-and ( $env:COVERALLS_REPO_TOKEN ) `
+	) {
+		$coverage = Format-Coverage `
+			-PesterResults $CodeCoveragePath `
+			-CoverallsApiToken $env:COVERALLS_REPO_TOKEN `
+			-BranchName $env:APPVEYOR_REPO_BRANCH `
+		;
+		Publish-Coverage -Coverage $coverage;
+	};
 
 	if ( $PesterResults.FailedCount ) {
 		$errorID = if ( $TestType -eq 'Unit' ) { 'UnitTestFailure' }
@@ -78,7 +108,9 @@ Task UnitTests -Depends InstallModules, ScriptAnalysis {
 Task Clean {
 	'Starting Cleaning enviroment...'
 
-	Remove-Item $TestResultsPath -ErrorAction SilentlyContinue;
+	If ( Test-Path $TestResultsDirPath ) {
+		Remove-Item $TestResultsDirPath -Recurse -Force -ErrorAction Continue;
+	};
 
 	$Error.Clear();
 }
