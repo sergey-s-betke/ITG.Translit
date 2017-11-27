@@ -14,7 +14,7 @@
 [av-image-develop]: https://ci.appveyor.com/api/projects/status/ls65xa6p9a4engit/branch/develop?svg=true
 [av-site]: https://ci.appveyor.com/project/sergey-s-betke/itg-translit
 
-[cs-image-master]: https://coveralls.io/repos/github/sergey-s-betke/ITG.Translit/badge.svg?branch=develop
+[cs-image-master]: https://coveralls.io/repos/github/sergey-s-betke/ITG.Translit/badge.svg?branch=master
 [cs-image-develop]: https://coveralls.io/repos/github/sergey-s-betke/ITG.Translit/badge.svg?branch=develop
 [cs-site]: https://coveralls.io/github/sergey-s-betke/ITG.Translit
 
