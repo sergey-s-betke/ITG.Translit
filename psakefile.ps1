@@ -41,18 +41,29 @@ Task ScriptAnalysis -Depends InstallModules {
 	# Run Script Analyzer
 	'Starting static analysis...'
 
-	$ScriptAnalyzerResults = `
-		Invoke-ScriptAnalyzer -Path $SourcesPath -Recurse `
-	;
-	$header = "<testsuite tests=`"$($ScriptAnalyzerResults.Count)`">";
-	$body = `
-		$ScriptAnalyzerResults `
-		| ForEach-Object {
-			"<testcase classname=`"analyzer`" name=`"$($_.RuleName)`"><failure type=`"$($_.ScriptName)`">$($_.Message)</failure></testcase>"
-		} `
-	;
-	$footer = "</testsuite>";
-	$header + $body +$footer | out-file $ScriptAnalyzerResultsPath;
+	$ScriptAnalyzerResults = Invoke-ScriptAnalyzer -Path $SourcesPath -Recurse;
+
+	[xml]$TestResults = "<testsuite tests=`"$($ScriptAnalyzerResults.Count)`"></testsuite>";
+	$ScriptAnalyzerResults | ForEach-Object {
+		[xml]$TestCase = "<testcase classname=`"analyzer`" name=`"$($_.RuleName)`"><failure type=`"$($_.ScriptName)`">$($_.Message)</failure></testcase>";
+		$TestResults.testsuite.AppendChild( $TestResults.ImportNode( $TestCase.testcase, $True ) );
+	};
+	$Writer = [System.Xml.XmlWriter]::Create(
+		$ScriptAnalyzerResultsPath `
+		, ( New-Object `
+			-TypeName System.Xml.XmlWriterSettings `
+			-Property @{
+				Indent = $True;
+				OmitXmlDeclaration = $False;
+				NamespaceHandling = [System.Xml.NamespaceHandling]::OmitDuplicates;
+				NewLineOnAttributes = $False;
+				CloseOutput = $True;
+				IndentChars = "`t";
+			} `
+		) `
+	);
+	$TestResults.WriteTo( $Writer );
+	$Writer.Close();
 
 	if ( $env:APPVEYOR -eq 'True' ) {
 		( New-Object System.Net.WebClient ).UploadFile(
