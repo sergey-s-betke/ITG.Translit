@@ -41,6 +41,16 @@ Task ScriptAnalysis -Depends InstallModules {
 	# Run Script Analyzer
 	'Starting static analysis...'
 
+	If ( -Not ( Test-Path $TestResultsDirPath ) ) {
+		New-Item `
+			-Path ( Split-Path -Path $TestResultsDirPath -Parent ) `
+			-Name ( Split-Path -Path $TestResultsDirPath -Leaf ) `
+			-ItemType Directory `
+			-Force `
+		| Out-Null `
+		;
+	};
+
 	$ScriptAnalyzerResults = Invoke-ScriptAnalyzer -Path $SourcesPath -Recurse;
 
 	[xml]$TestResults = "<testsuite tests=`"$($ScriptAnalyzerResults.Count)`"></testsuite>";
