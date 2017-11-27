@@ -7,7 +7,6 @@
 | Branch                           | master                           | develop                          |
 |----------------------------------|----------------------------------|----------------------------------|
 | Build on AppVeyor (Windows)      | [![av-image-master][]][av-site]  | [![av-image-develop][]][av-site] |
-|----------------------------------|----------------------------------|----------------------------------|
 | Coverage Status                  | [![cs-image-master][]][cs-site]  | [![cs-image-develop][]][cs-site] |
 
 
