@@ -77,7 +77,7 @@ Task ScriptAnalysis -Depends InstallModules {
 
 	if ( $env:APPVEYOR ) {
 		( New-Object System.Net.WebClient ).UploadFile(
-			"https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)",
+			"https://ci.appveyor.com/api/testresults/junit/$($env:APPVEYOR_JOB_ID)",
 			( Resolve-Path $ScriptAnalyzerResultsPath )
 		);
 	};
