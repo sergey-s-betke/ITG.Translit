@@ -16,6 +16,7 @@ Properties {
 	$TestResultsDirPath = Join-Path -Path $TestsPath -ChildPath 'TestsResults';
 	$TestResultsPath = Join-Path -Path $TestResultsDirPath -ChildPath 'TestsResults.xml';
 	$CodeCoveragePath = Join-Path -Path $TestResultsDirPath -ChildPath 'CodeCoveragePath.xml';
+	$ScriptAnalyzerResultsPath = Join-Path -Path $TestResultsDirPath -ChildPath 'ScriptAnalyzerResults.xml';
 #	$ArtifactPath = "$Env:BUILD_ARTIFACTSTAGINGDIRECTORY"
 #	$ModuleArtifactPath = "$ArtifactPath\Modules"
 }
@@ -28,7 +29,7 @@ Task InstallModules {
 		Import-PackageProvider -Name NuGet -ErrorAction Stop -Force | Out-Null;
 	};
 	Set-PSRepository -Name PSGallery -InstallationPolicy Trusted;
-	'Pester', 'Coveralls' | ForEach-Object {
+	'Pester', 'Coveralls', 'PSScriptAnalyzer' | ForEach-Object {
 		If ( -Not ( Get-Module -Name $_ -ListAvailable ) ) {
 			Install-Module -Name $_ -SkipPublisherCheck -Scope CurrentUser -ErrorAction Stop -Verbose;
 			Import-Module -Name $_;
@@ -38,8 +39,44 @@ Task InstallModules {
 
 Task ScriptAnalysis -Depends InstallModules {
 	# Run Script Analyzer
-	# "Starting static analysis..."
-	# Invoke-ScriptAnalyzer -Path $ConfigPath
+	'Starting static analysis...'
+
+	$ScriptAnalyzerResults = `
+		Invoke-ScriptAnalyzer -Path $SourcesPath -Recurse `
+	;
+	$header = "<testsuite tests=`"$($ScriptAnalyzerResults.Count)`">";
+	$body = `
+		$ScriptAnalyzerResults `
+		| ForEach-Object {
+			"<testcase classname=`"analyzer`" name=`"$($_.RuleName)`"><failure type=`"$($_.ScriptName)`">$($_.Message)</failure></testcase>"
+		} `
+	;
+	$footer = "</testsuite>";
+	$header + $body +$footer | out-file $ScriptAnalyzerResultsPath;
+
+	if ( $env:APPVEYOR -eq 'True' ) {
+		( New-Object System.Net.WebClient ).UploadFile(
+			"https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)",
+			( Resolve-Path $ScriptAnalyzerResultsPath )
+		);
+	};
+
+	if ( $ScriptAnalyzerResults.Count ) {
+		$errorID = 'ScriptAnalyzerTestFailure';
+		$errorCategory = [System.Management.Automation.ErrorCategory]::LimitsExceeded;
+		$errorMessage = "Script Analyzer issues: $($ScriptAnalyzerResults.Count).";
+		$exception = New-Object `
+			-TypeName System.SystemException `
+			-ArgumentList $errorMessage `
+		;
+		$errorRecord = New-Object `
+			-TypeName System.Management.Automation.ErrorRecord `
+			-ArgumentList $exception, $errorID, $errorCategory, $null `
+		;
+		Write-Output "##vso[task.logissue type=warning]$errorMessage";
+		Write-Output $ScriptAnalyzerResults;
+		Throw $errorRecord;
+	}
 }
 
 Task UnitTests -Depends InstallModules, ScriptAnalysis {
@@ -91,7 +128,7 @@ Task UnitTests -Depends InstallModules, ScriptAnalysis {
 			else { 'AcceptanceTestFailure' }
 		;
 		$errorCategory = [System.Management.Automation.ErrorCategory]::LimitsExceeded;
-		$errorMessage = "$TestType Test Failed: $($PesterResults.FailedCount) tests failed out of $($PesterResults.TotalCount) total test.";
+		$errorMessage = "Test Failed: $($PesterResults.FailedCount) tests failed out of $($PesterResults.TotalCount) total test.";
 		$exception = New-Object `
 			-TypeName System.SystemException `
 			-ArgumentList $errorMessage `
