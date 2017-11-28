@@ -29,6 +29,9 @@ Properties {
 
 	$DocsPath = Join-Path -Path $PSScriptRoot -ChildPath 'docs';
 	$MdDocsPath = Join-Path -Path $DocsPath -ChildPath 'markdown';
+	$ExtHelpSrcPath = $SourcesPath;
+	$ExtHelpCabPath = Join-Path -Path $DocsPath -ChildPath 'Help.cab';
+    $HelpLocale = 'ru-RU';
 
 #	$ArtifactPath = "$Env:BUILD_ARTIFACTSTAGINGDIRECTORY"
 #	$ModuleArtifactPath = "$ArtifactPath\Modules"
@@ -210,8 +213,9 @@ Task CreateMarkdownHelp -Depends InstallModules {
 		-Module $ModuleName `
 		-WithModulePage `
 		-OutputFolder $MdDocsPath `
-		-Locale 'ru-RU' `
+		-Locale $HelpLocale `
 		-Force `
+		-ErrorAction Stop `
 		-Verbose:$VerbosePreference `
 	| Out-Null;
 }
@@ -226,8 +230,47 @@ Task UpdateMarkdownHelp -Depends InstallModules {
 	;
 	Update-MarkdownHelp `
 		-Path $MdDocsPath `
+		-ErrorAction Stop `
 		-Verbose:$VerbosePreference `
 	| Out-Null;
+	Update-MarkdownHelpModule `
+		-Path $MdDocsPath `
+		-RefreshModulePage `
+		-ErrorAction Stop `
+		-Verbose:$VerbosePreference `
+	| Out-Null;
+}
+
+Task BuildHelp -Depends UpdateMarkdownHelp {
+	Write-Information 'Build external help files...';
+
+	If ( -Not ( Test-Path $ExtHelpCabPath ) ) {
+		New-Item `
+			-Path ( Split-Path -Path $ExtHelpCabPath -Parent ) `
+			-Name ( Split-Path -Path $ExtHelpCabPath -Leaf ) `
+			-ItemType Directory `
+			-Force `
+			-ErrorAction Stop `
+			-Verbose:$VerbosePreference `
+		| Out-Null `
+		;
+	};
+
+	New-ExternalHelp `
+		-Path $MdDocsPath `
+		-OutputPath ( Join-Path -Path $ExtHelpSrcPath -ChildPath $HelpLocale ) `
+		-Force `
+		-ErrorAction Stop `
+		-Verbose:$VerbosePreference `
+	| Out-Null;
+	New-ExternalHelpCab `
+		-CabFilesFolder ( Join-Path -Path $ExtHelpSrcPath -ChildPath $HelpLocale )  `
+		-OutputFolder $ExtHelpCabPath `
+		-LandingPagePath ( Join-Path -Path $MdDocsPath -ChildPath "$($ModuleName).md" ) `
+		-ErrorAction Stop `
+		-Verbose:$VerbosePreference `
+	| Out-Null;
+    ;
 }
 
 Task Clean {
@@ -238,6 +281,9 @@ Task Clean {
 	};
 	If ( Test-Path $CodeQualityTestResultsDirPath ) {
 		Remove-Item $CodeQualityTestResultsDirPath -Recurse -Force -ErrorAction Continue -Verbose:$VerbosePreference;
+	};
+	If ( Test-Path $ExtHelpCabPath ) {
+		Remove-Item $ExtHelpCabPath -Recurse -Force -ErrorAction Continue -Verbose:$VerbosePreference;
 	};
 
 	$Error.Clear();
