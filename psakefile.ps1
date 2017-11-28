@@ -21,8 +21,8 @@ Properties {
 #	$ArtifactPath = "$Env:BUILD_ARTIFACTSTAGINGDIRECTORY"
 #	$ModuleArtifactPath = "$ArtifactPath\Modules"
 	$RequiredModules = @(
-		@{ ModuleName = 'Pester'; ModuleVersion = '4.1' },
-		@{ ModuleName = 'Coveralls'; ModuleVersion = '1.0' },
+		@{ ModuleName = 'Pester'; ModuleVersion = '4.1' }
+		@{ ModuleName = 'Coveralls'; ModuleVersion = '1.0' }
 		@{ ModuleName = 'PSScriptAnalyzer'; ModuleVersion = '1.0' }
 	);
 }
@@ -35,11 +35,12 @@ Task InstallModules {
 		Import-PackageProvider -Name NuGet -ErrorAction Stop -Force | Out-Null;
 	};
 	Set-PSRepository -Name PSGallery -InstallationPolicy Trusted;
-	ForEach ( $Module in $RequiredModules ) {
-		If ( -Not ( Get-Module -Name $Module.ModuleName -ListAvailable | Where-Object { $_.Version -ge $Module.ModuleVersion } ) ) {
-			Install-Module -Name $Module.ModuleName -MinimumVersion $Module.ModuleVersion -SkipPublisherCheck -Scope CurrentUser -Force -ErrorAction Stop -Verbose;
-			Import-Module -Name $Module.ModuleName -MinimumVersion $Module.ModuleVersion;
+	$RequiredModules `
+	| Foreach-Object {
+		if ( -not ( Get-Module -FullyQualifiedName $_ -ListAvailable ) ) {
+			Install-Module -Name $_.ModuleName -RequiredVersion $_.ModuleVersion -SkipPublisherCheck -Scope CurrentUser -Force -AllowClobber -ErrorAction Stop -Verbose;
 		};
+		Import-Module -FullyQualifiedName $_;
 	};
 }
 
