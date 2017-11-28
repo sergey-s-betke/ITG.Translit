@@ -22,8 +22,8 @@ Properties {
 #	$ModuleArtifactPath = "$ArtifactPath\Modules"
 	$RequiredModules = @(
 		@{ ModuleName = 'Pester'; ModuleVersion = '4.1.0' }
-		@{ ModuleName = 'Coveralls'; ModuleVersion = '1.0.0' }
-		@{ ModuleName = 'PSScriptAnalyzer'; ModuleVersion = '1.0.0' }
+		@{ ModuleName = 'Coveralls'; ModuleVersion = '1.0.25' }
+		@{ ModuleName = 'PSScriptAnalyzer'; ModuleVersion = '1.16.1' }
 	);
 }
 
