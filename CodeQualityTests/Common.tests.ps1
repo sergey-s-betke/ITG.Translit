@@ -20,7 +20,7 @@ Describe 'PSScriptAnalyzer' {
 			@"
 
 $($_.Message)
-$($_.SuggestedCorrections)
+$($_.SuggestedCorrections.Description)
 
 $($_.ScriptName): строка $($_.Line)
 
