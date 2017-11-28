@@ -18,16 +18,19 @@ Describe 'ITG.Translit.psm1' {
 
 Describe 'ConvertTo-Translit' {
 	Context 'В случае, когда входные данные передаются через конвейер' {
-		It 'Должен вернуть результат транслитерации' {
-			'тест' `
-			| ConvertTo-Translit `
-			| Should -Be 'test'
+		It 'Должен вернуть результат транслитерации: <Source> -> <Result>' -TestCases @(
+			@{ Source = 'тест'; Result = 'test' }
+		) {
+			param( $Source, $Result )
+			$Source | ConvertTo-Translit | Should -Be $Result
 		}
 	}
 	Context 'В случае, когда исходная строка передаётся как аргумент' {
-		It 'Должен вернуть результат транслитерации' {
-			ConvertTo-Translit -SourceString 'тест' `
-			| Should -Be 'test'
+		It 'Должен вернуть результат транслитерации: <Source> -> <Result>' -TestCases @(
+			@{ Source = 'тест'; Result = 'test' }
+		) {
+			param( $Source, $Result )
+			ConvertTo-Translit -SourceString $Source | Should -Be $Result
 		}
 	}
 	Context 'В случае, когда массив входных данных передаётся через конвейер' {
@@ -38,10 +41,13 @@ Describe 'ConvertTo-Translit' {
 		}
 	}
 	Context 'В случае, когда строка состоит из одного символа' {
-		It 'Должен вернуть строку, в которой только первый символ прописной' {
-			'Я', 'Ш', 'Щ' `
-			| ConvertTo-Translit `
-			| Should -BeExactly 'Ia', 'Sh', 'Shch'
+		It 'Должен вернуть строку, в которой только первый символ прописной: <Source> -> <Result>' -TestCases @(
+			@{ Source = 'Я'; Result = 'Ia' },
+			@{ Source = 'Ш'; Result = 'Sh' },
+			@{ Source = 'Щ'; Result = 'Shch' }
+		) {
+			param( $Source, $Result )
+			$Source | ConvertTo-Translit | Should -Be $Result
 		}
 	}
 	Context 'В случае, когда все символы в строке прописные' {

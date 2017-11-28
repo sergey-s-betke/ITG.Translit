@@ -26,4 +26,5 @@ build: off
 
 test_script:
   - ps: |
+      Invoke-psake ScriptAnalysis -ErrorAction Stop;
       Invoke-psake UnitTests -ErrorAction Stop;

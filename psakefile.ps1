@@ -15,9 +15,16 @@ Properties {
 	$TestsPath = Join-Path -Path $PSScriptRoot -ChildPath 'Tests';
 	$TestResultsDirPath = Join-Path -Path $TestsPath -ChildPath 'TestsResults';
 	$TestResultsPath = Join-Path -Path $TestResultsDirPath -ChildPath 'TestsResults.xml';
-	$CodeCoveragePath = Join-Path -Path $TestResultsDirPath -ChildPath 'CodeCoveragePath.xml';
+	$CodeQualityTestsPath = Join-Path -Path $PSScriptRoot -ChildPath 'CodeQualityTests';
+	$CodeQualityTestResultsDirPath = Join-Path -Path $CodeQualityTestsPath -ChildPath 'TestsResults';
+	$ScriptAnalyzerResultsPath = Join-Path -Path $CodeQualityTestResultsDirPath -ChildPath 'ScriptAnalyzerResults.xml';
 #	$ArtifactPath = "$Env:BUILD_ARTIFACTSTAGINGDIRECTORY"
 #	$ModuleArtifactPath = "$ArtifactPath\Modules"
+	$RequiredModules = @(
+		@{ ModuleName = 'Pester'; ModuleVersion = '4.1' },
+		@{ ModuleName = 'Coveralls'; ModuleVersion = '1.0' },
+		@{ ModuleName = 'PSScriptAnalyzer'; ModuleVersion = '1.0' }
+	);
 }
 
 Task Default -Depends UnitTests
@@ -28,21 +35,60 @@ Task InstallModules {
 		Import-PackageProvider -Name NuGet -ErrorAction Stop -Force | Out-Null;
 	};
 	Set-PSRepository -Name PSGallery -InstallationPolicy Trusted;
-	'Pester', 'Coveralls' | ForEach-Object {
-		If ( -Not ( Get-Module -Name $_ -ListAvailable ) ) {
-			Install-Module -Name $_ -SkipPublisherCheck -Scope CurrentUser -ErrorAction Stop -Verbose;
-			Import-Module -Name $_;
+	ForEach ( $Module in $RequiredModules ) {
+		If ( -Not ( Get-Module -Name $Module.ModuleName -ListAvailable | Where-Object { $_.Version -ge $Module.ModuleVersion } ) ) {
+			Install-Module -Name $Module.ModuleName -MinimumVersion $Module.ModuleVersion -SkipPublisherCheck -Scope CurrentUser -Force -ErrorAction Stop -Verbose;
+			Import-Module -Name $Module.ModuleName -MinimumVersion $Module.ModuleVersion;
 		};
 	};
 }
 
 Task ScriptAnalysis -Depends InstallModules {
 	# Run Script Analyzer
-	# "Starting static analysis..."
-	# Invoke-ScriptAnalyzer -Path $ConfigPath
+	'Starting static analysis...'
+
+	If ( -Not ( Test-Path $CodeQualityTestResultsDirPath ) ) {
+		New-Item `
+			-Path ( Split-Path -Path $CodeQualityTestResultsDirPath -Parent ) `
+			-Name ( Split-Path -Path $CodeQualityTestResultsDirPath -Leaf ) `
+			-ItemType Directory `
+			-Force `
+		| Out-Null `
+		;
+	};
+
+	$PesterResults = Invoke-Pester `
+		-Path $CodeQualityTestsPath `
+		-OutputFile $ScriptAnalyzerResultsPath `
+		-OutputFormat NUnitXml `
+		-PassThru `
+	;
+
+	if ( $env:APPVEYOR ) {
+		( New-Object System.Net.WebClient ).UploadFile(
+			"https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)",
+			( Resolve-Path $ScriptAnalyzerResultsPath )
+		);
+	};
+
+	if ( $PesterResults.FailedCount ) {
+		$errorID = 'AcceptanceTestFailure';
+		$errorCategory = [System.Management.Automation.ErrorCategory]::LimitsExceeded;
+		$errorMessage = "Test Failed: $($PesterResults.FailedCount) tests failed out of $($PesterResults.TotalCount) total test.";
+		$exception = New-Object `
+			-TypeName System.SystemException `
+			-ArgumentList $errorMessage `
+		;
+		$errorRecord = New-Object `
+			-TypeName System.Management.Automation.ErrorRecord `
+			-ArgumentList $exception, $errorID, $errorCategory, $null `
+		;
+		Write-Output "##vso[task.logissue type=warning]$errorMessage";
+		Throw $errorRecord;
+	}
 }
 
-Task UnitTests -Depends InstallModules, ScriptAnalysis {
+Task UnitTests -Depends InstallModules {
 	# Run Unit Tests with Code Coverage
 	'Starting unit tests...'
 
@@ -61,12 +107,10 @@ Task UnitTests -Depends InstallModules, ScriptAnalysis {
 		-OutputFile $TestResultsPath `
 		-OutputFormat NUnitXml `
 		-CodeCoverage ( Join-Path -Path $SourcesPath -ChildPath '*.*' ) `
-		-CodeCoverageOutputFile $CodeCoveragePath `
-		-CodeCoverageOutputFileFormat JaCoCo `
 		-PassThru `
 	;
 
-	if ( $env:APPVEYOR -eq 'True' ) {
+	if ( $env:APPVEYOR ) {
 		( New-Object System.Net.WebClient ).UploadFile(
 			"https://ci.appveyor.com/api/testresults/nunit/$($env:APPVEYOR_JOB_ID)",
 			( Resolve-Path $TestResultsPath )
@@ -74,7 +118,7 @@ Task UnitTests -Depends InstallModules, ScriptAnalysis {
 	};
 
 	if (
-		( $env:APPVEYOR -eq 'True' ) `
+		( $env:APPVEYOR ) `
 		-and ( $env:COVERALLS_REPO_TOKEN ) `
 	) {
 		$coverage = Format-Coverage `
@@ -86,12 +130,9 @@ Task UnitTests -Depends InstallModules, ScriptAnalysis {
 	};
 
 	if ( $PesterResults.FailedCount ) {
-		$errorID = if ( $TestType -eq 'Unit' ) { 'UnitTestFailure' }
-			elseif ( $TestType -eq 'Integration' ) { 'InetegrationTestFailure' }
-			else { 'AcceptanceTestFailure' }
-		;
+		$errorID = 'UnitTestFailure';
 		$errorCategory = [System.Management.Automation.ErrorCategory]::LimitsExceeded;
-		$errorMessage = "$TestType Test Failed: $($PesterResults.FailedCount) tests failed out of $($PesterResults.TotalCount) total test.";
+		$errorMessage = "Test Failed: $($PesterResults.FailedCount) tests failed out of $($PesterResults.TotalCount) total test.";
 		$exception = New-Object `
 			-TypeName System.SystemException `
 			-ArgumentList $errorMessage `
@@ -110,6 +151,9 @@ Task Clean {
 
 	If ( Test-Path $TestResultsDirPath ) {
 		Remove-Item $TestResultsDirPath -Recurse -Force -ErrorAction Continue;
+	};
+	If ( Test-Path $CodeQualityTestResultsDirPath ) {
+		Remove-Item $CodeQualityTestResultsDirPath -Recurse -Force -ErrorAction Continue;
 	};
 
 	$Error.Clear();
