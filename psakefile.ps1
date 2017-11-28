@@ -15,10 +15,14 @@ Properties {
 	$TestsPath = Join-Path -Path $PSScriptRoot -ChildPath 'Tests';
 	$TestResultsDirPath = Join-Path -Path $TestsPath -ChildPath 'TestsResults';
 	$TestResultsPath = Join-Path -Path $TestResultsDirPath -ChildPath 'TestsResults.xml';
-	$CodeCoveragePath = Join-Path -Path $TestResultsDirPath -ChildPath 'CodeCoveragePath.xml';
 	$ScriptAnalyzerResultsPath = Join-Path -Path $TestResultsDirPath -ChildPath 'ScriptAnalyzerResults.xml';
 #	$ArtifactPath = "$Env:BUILD_ARTIFACTSTAGINGDIRECTORY"
 #	$ModuleArtifactPath = "$ArtifactPath\Modules"
+	$RequiredModules = @(
+		@{ ModuleName = 'Pester'; ModuleVersion = '4.1' },
+		@{ ModuleName = 'Coveralls'; ModuleVersion = '1.0' },
+		@{ ModuleName = 'PSScriptAnalyzer'; ModuleVersion = '1.0' }
+	);
 }
 
 Task Default -Depends UnitTests
@@ -29,10 +33,10 @@ Task InstallModules {
 		Import-PackageProvider -Name NuGet -ErrorAction Stop -Force | Out-Null;
 	};
 	Set-PSRepository -Name PSGallery -InstallationPolicy Trusted;
-	'Pester', 'Coveralls', 'PSScriptAnalyzer' | ForEach-Object {
-		If ( -Not ( Get-Module -Name $_ -ListAvailable ) ) {
-			Install-Module -Name $_ -SkipPublisherCheck -Scope CurrentUser -ErrorAction Stop -Verbose;
-			Import-Module -Name $_;
+	ForEach ( $Module in $RequiredModules ) {
+		If ( -Not ( Get-Module -Name $Module.ModuleName -ListAvailable | Where-Object { $_.Version -ge $Module.ModuleVersion } ) ) {
+			Install-Module -Name $Module.ModuleName -MinimumVersion $Module.ModuleVersion -SkipPublisherCheck -Scope CurrentUser -Force -ErrorAction Stop -Verbose;
+			Import-Module -Name $Module.ModuleName -MinimumVersion $Module.ModuleVersion;
 		};
 	};
 }
@@ -119,8 +123,6 @@ Task UnitTests -Depends InstallModules {
 		-OutputFile $TestResultsPath `
 		-OutputFormat NUnitXml `
 		-CodeCoverage ( Join-Path -Path $SourcesPath -ChildPath '*.*' ) `
-		-CodeCoverageOutputFile $CodeCoveragePath `
-		-CodeCoverageOutputFileFormat JaCoCo `
 		-PassThru `
 	;
 
