@@ -21,9 +21,9 @@ Properties {
 #	$ArtifactPath = "$Env:BUILD_ARTIFACTSTAGINGDIRECTORY"
 #	$ModuleArtifactPath = "$ArtifactPath\Modules"
 	$RequiredModules = @(
-		@{ ModuleName = 'Pester'; ModuleVersion = '4.1' }
-		@{ ModuleName = 'Coveralls'; ModuleVersion = '1.0' }
-		@{ ModuleName = 'PSScriptAnalyzer'; ModuleVersion = '1.0' }
+		@{ ModuleName = 'Pester'; ModuleVersion = '4.1.0' }
+		@{ ModuleName = 'Coveralls'; ModuleVersion = '1.0.0' }
+		@{ ModuleName = 'PSScriptAnalyzer'; ModuleVersion = '1.0.0' }
 	);
 }
 
