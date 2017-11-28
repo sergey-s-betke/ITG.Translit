@@ -7,8 +7,8 @@
 
 $ModuleDirPath = Join-Path -Path $RootPath -ChildPath 'ITG.Translit';
 
-Describe 'PSScriptAnalyzer analysis' {    
-	It 'Should passed for the rule: <RuleName>' -TestCases @(
+Describe 'PSScriptAnalyzer' {    
+	It '<RuleName>' -TestCases @(
 		Get-ScriptAnalyzerRule `
 		| ForEach-Object { @{ RuleName = $_.RuleName; Rule = $_; } } 
 	) {
@@ -18,6 +18,7 @@ Describe 'PSScriptAnalyzer analysis' {
 			-IncludeRule $Rule.RuleName `
 		| ForEach-Object {
 			@"
+
 $($_.Message)
 $($_.SuggestedCorrections)
 
