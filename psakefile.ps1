@@ -208,6 +208,7 @@ Task CreateMarkdownHelp -Depends InstallModules {
 		-Name $ModulePath `
 		-ErrorAction Stop `
 		-Verbose:$VerbosePreference `
+		-Global `
 	;
 	New-MarkdownHelp `
 		-Module $ModuleName `
@@ -227,6 +228,7 @@ Task UpdateMarkdownHelp -Depends InstallModules {
 		-Name $ModulePath `
 		-ErrorAction Stop `
 		-Verbose:$VerbosePreference `
+		-Global `
 	;
 	Update-MarkdownHelp `
 		-Path $MdDocsPath `
