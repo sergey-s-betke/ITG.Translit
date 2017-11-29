@@ -1,6 +1,6 @@
 ---
 Module Name: ITG.Translit
-Module Guid: 00000000-0000-0000-0000-000000000000
+Module Guid: a52b9f21-3c4b-4047-a189-1b5e1aebab05
 Download Help Link: {{Please enter FwLink manually}}
 Help Version: {{Please enter version of help manually (X.X.X.X) format}}
 Locale: ru-RU

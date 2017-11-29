@@ -17,7 +17,7 @@ Properties {
 	$ModuleName = 'ITG.Translit';
 
 	$SourcesPath = Join-Path -Path $PSScriptRoot -ChildPath $ModuleName;
-	$ModulePath = Join-Path -Path $SourcesPath -ChildPath "$($ModuleName).psm1";
+	$ModulePath = Join-Path -Path $SourcesPath -ChildPath "$($ModuleName).psd1";
 
 	$TestsPath = Join-Path -Path $PSScriptRoot -ChildPath 'Tests';
 	$TestResultsDirPath = Join-Path -Path $TestsPath -ChildPath 'TestsResults';
@@ -206,9 +206,10 @@ Task CreateMarkdownHelp -Depends InstallModules {
 
 	Import-Module `
 		-Name $ModulePath `
+		-Force `
+		-Global `
 		-ErrorAction Stop `
 		-Verbose:$VerbosePreference `
-		-Global `
 	;
 	New-MarkdownHelp `
 		-Module $ModuleName `
@@ -226,9 +227,10 @@ Task UpdateMarkdownHelp -Depends InstallModules {
 
 	Import-Module `
 		-Name $ModulePath `
+		-Force `
+		-Global `
 		-ErrorAction Stop `
 		-Verbose:$VerbosePreference `
-		-Global `
 	;
 	Update-MarkdownHelp `
 		-Path $MdDocsPath `
