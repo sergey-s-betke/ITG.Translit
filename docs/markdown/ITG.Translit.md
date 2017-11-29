@@ -1,8 +1,8 @@
 ---
 Module Name: ITG.Translit
 Module Guid: a52b9f21-3c4b-4047-a189-1b5e1aebab05
-Download Help Link: {{Please enter FwLink manually}}
-Help Version: {{Please enter version of help manually (X.X.X.X) format}}
+Download Help Link: 'https://github.com/sergey-s-betke/ITG.Translit/releases/download/v1.0.0/ITG.Translit_a52b9f21-3c4b-4047-a189-1b5e1aebab05_ru-RU_HelpContent.cab'
+Help Version: 1.0.0.0
 Locale: ru-RU
 ---
 
